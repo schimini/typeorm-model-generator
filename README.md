@@ -13,17 +13,22 @@ Supported db engines:
 * Oracle Database
 * SQLite
 
+## Important note
+This is a fork of [typeorm-model-generator](https://github.com/Kononnable/typeorm-model-generator) that comes with database connectors. This allows model generation using mysql2 connector ( supports caching_sha2_password auth method ) and reduces dependencies because come on, "no one" uses 4 different databases in a project.
 
 ## Installation
 ### Versions
 Typeorm-model-generator comes with preinstalled driver for each supported db(except for oracle). However if you want to use it as a dev-dependency you may want to install your db driver manually to reduce dependency footprint, reduce time spent in the CI. In such case you can use version without preinstalled db drivers - `npm i typeorm-model-generator@no-engines`.  
 ### Global module
-To install module globally simply type `npm i -g typeorm-model-generator` in your console.
+To install module globally simply type `npm i -g schimini/typeorm-model-generator#<version>` in your console.
 ### Npx way
 Thanks to npx you can use npm modules without polluting global installs. So nothing to do here :)
 >To use `npx` you need to use npm at version at least 5.2.0. Try updating your npm by `npm i -g npm`
 ### Database drivers
-All database drivers except oracle are installed by default. To use typeorm-model-generator with oracle database you need to install driver with `npm i oracledb` and configure [oracle install client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/overview/index.html) on your machine.
+**No** database drivers are installed by default.
+This behaviour is similar to typeorms' and so you have to install the drivers you want to use. If you use typeorm it should be [trivial](https://typeorm.io/#/). 
+
+To use typeorm-model-generator with oracle database you need to install driver with `npm i oracledb` and configure [oracle install client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/overview/index.html) on your machine.
 
 ## Usage 
 There are two way to use this utility:

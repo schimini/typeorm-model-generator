@@ -1,4 +1,5 @@
 import type * as MYSQL from "mysql";
+import type * as MYSQL2 from "mysql2";
 import { ConnectionOptions } from "typeorm";
 import * as TypeormDriver from "typeorm/driver/mysql/MysqlDriver";
 import { DataTypeDefaults } from "typeorm/driver/types/DataTypeDefaults";
@@ -10,6 +11,7 @@ import { Column } from "../models/Column";
 import { Index } from "../models/Index";
 import { RelationInternal } from "../models/RelationInternal";
 import IGenerationOptions from "../IGenerationOptions";
+import { PxfObject } from "tls";
 
 export default class MysqlDriver extends AbstractDriver {
     public defaultValues: DataTypeDefaults = new TypeormDriver.MysqlDriver({
@@ -24,18 +26,27 @@ export default class MysqlDriver extends AbstractDriver {
 
     public readonly standardSchema = "";
 
-    private MYSQL: typeof MYSQL;
+    private MYSQL: typeof MYSQL | typeof MYSQL2;
 
-    private Connection: MYSQL.Connection;
+    private Connection: MYSQL.Connection | MYSQL2.Connection;
 
     public constructor() {
         super();
         try {
             // eslint-disable-next-line import/no-extraneous-dependencies, global-require, import/no-unresolved
             this.MYSQL = require("mysql");
+            if (Object.keys(this.MYSQL).length === 0) {
+                throw new Error(
+                    "'mysql' was found but it is empty. Falling back to 'mysql2'."
+                );
+            }
         } catch (error) {
-            TomgUtils.LogError("", false, error);
-            throw error;
+            try {
+                this.MYSQL = require("mysql2"); // try to load second supported package
+            } catch (error) {
+                TomgUtils.LogError("", false, error);
+                throw error;
+            }
         }
     }
 
@@ -429,7 +440,9 @@ export default class MysqlDriver extends AbstractDriver {
 
     public async DisconnectFromServer() {
         const promise = new Promise<boolean>((resolve, reject) => {
-            this.Connection.end((err) => {
+            (this.Connection.end as (
+                callback: (err: MYSQL.MysqlError | MYSQL2.QueryError) => void
+            ) => void)((err) => {
                 if (!err) {
                     resolve(true);
                 } else {
@@ -449,7 +462,12 @@ export default class MysqlDriver extends AbstractDriver {
 
     public async ConnectToServer(connectionOptons: IConnectionOptions) {
         const databaseName = connectionOptons.databaseName.split(",")[0];
-        let config: MYSQL.ConnectionConfig;
+        let config: {
+            ssl?;
+            flags?: string[] | undefined;
+            queryFormat?: ((query: string, values: any) => string) | undefined;
+            pfx?: string | Buffer | (string | Buffer | PxfObject)[];
+        } & Partial<Common<MYSQL.ConnectionConfig, MYSQL2.ConnectionOptions>>;
         if (connectionOptons.ssl) {
             config = {
                 database: databaseName,
@@ -459,7 +477,7 @@ export default class MysqlDriver extends AbstractDriver {
                 ssl: {
                     rejectUnauthorized: false,
                 },
-                timeout: 60 * 60 * 1000,
+                //timeout: 60 * 60 * 1000,
                 user: connectionOptons.user,
             };
         } else {
@@ -468,7 +486,7 @@ export default class MysqlDriver extends AbstractDriver {
                 host: connectionOptons.host,
                 password: connectionOptons.password,
                 port: connectionOptons.port,
-                timeout: 60 * 60 * 1000,
+                //timeout: 60 * 60 * 1000,
                 user: connectionOptons.user,
             };
         }
@@ -512,7 +530,7 @@ export default class MysqlDriver extends AbstractDriver {
 
     public async ExecQuery<T>(sql: string): Promise<T[]> {
         const ret: T[] = [];
-        const query = this.Connection.query(sql);
+        const query = (this.Connection.query as any)(sql);
         const stream = query.stream({});
         const promise = new Promise<boolean>((resolve, reject) => {
             stream.on("data", (chunk) => {
@@ -549,3 +567,7 @@ export default class MysqlDriver extends AbstractDriver {
         return `() => "'${defaultValue}'"`;
     }
 }
+
+type Common<A, B> = {
+    [P in keyof A & keyof B]: A[P] | B[P];
+};
