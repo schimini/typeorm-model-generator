@@ -11,7 +11,6 @@ import { Column } from "../models/Column";
 import { Index } from "../models/Index";
 import { RelationInternal } from "../models/RelationInternal";
 import IGenerationOptions from "../IGenerationOptions";
-import { PxfObject } from "tls";
 
 export default class MysqlDriver extends AbstractDriver {
     public defaultValues: DataTypeDefaults = new TypeormDriver.MysqlDriver({
@@ -42,8 +41,9 @@ export default class MysqlDriver extends AbstractDriver {
             }
         } catch (error) {
             try {
+                // eslint-disable-next-line import/no-extraneous-dependencies, global-require, import/no-unresolved
                 this.MYSQL = require("mysql2"); // try to load second supported package
-            } catch (error) {
+            } catch (e) {
                 TomgUtils.LogError("", false, error);
                 throw error;
             }
@@ -466,7 +466,7 @@ export default class MysqlDriver extends AbstractDriver {
             ssl?;
             flags?: string[] | undefined;
             queryFormat?: ((query: string, values: any) => string) | undefined;
-            pfx?: string | Buffer | (string | Buffer | PxfObject)[];
+            pfx?: string | Buffer | (string | Buffer | any)[];
         } & Partial<Common<MYSQL.ConnectionConfig, MYSQL2.ConnectionOptions>>;
         if (connectionOptons.ssl) {
             config = {
@@ -477,7 +477,7 @@ export default class MysqlDriver extends AbstractDriver {
                 ssl: {
                     rejectUnauthorized: false,
                 },
-                //timeout: 60 * 60 * 1000,
+                // timeout: 60 * 60 * 1000,
                 user: connectionOptons.user,
             };
         } else {
@@ -486,7 +486,7 @@ export default class MysqlDriver extends AbstractDriver {
                 host: connectionOptons.host,
                 password: connectionOptons.password,
                 port: connectionOptons.port,
-                //timeout: 60 * 60 * 1000,
+                // timeout: 60 * 60 * 1000,
                 user: connectionOptons.user,
             };
         }
