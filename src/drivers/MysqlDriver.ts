@@ -492,7 +492,9 @@ export default class MysqlDriver extends AbstractDriver {
         }
 
         const promise = new Promise<boolean>((resolve, reject) => {
-            this.Connection = this.MYSQL.createConnection(config);
+            this.Connection = (this.MYSQL.createConnection as (
+                options: MYSQL.ConnectionConfig | MYSQL2.ConnectionOptions
+            ) => MYSQL.Connection | MYSQL2.Connection)(config);
 
             this.Connection.connect((err) => {
                 if (!err) {
